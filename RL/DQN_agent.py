@@ -20,7 +20,7 @@ from RL.model import DQN_Model as Model
 from RL.train_model import getState
 
 class agent:
-    def __init__(self, input_dim, lam, gamma, lr, eps_start=0.99, eps_end=0.1, eps_decay=10000):
+    def __init__(self, input_dim, lam, gamma, lr, eps_start=0.7, eps_end=0.1, eps_decay=1000):
         self.lam = lam
         self.gamma = gamma
         self.policy_model = Model(input_dim)
