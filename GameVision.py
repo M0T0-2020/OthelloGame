@@ -21,7 +21,7 @@ class OthelloGame:
         self.yellow = (255,255,51)
         self.white = (255,255,255)
         self.black = (0,0,0)
-        self.r = min(self.H/16, self.W/16)
+        self.r = min(self.H/18, self.W/18)
         self.init_flag = True
 
         self.first_board = np.zeros((8,8),dtype=int)
@@ -30,9 +30,9 @@ class OthelloGame:
         self.first_board[3,4]=2
         self.first_board[4,3]=2
 
-        self.changesmooth_sleep_time = 0.4
-        self.showResult_sleep_time = 0.75
-        self.drawCercle_sleep_time = 0.4
+        self.changesmooth_sleep_time = 0.5
+        self.showResult_sleep_time = 0.5
+        self.drawCercle_sleep_time = 0.5
 
 
 
@@ -66,8 +66,8 @@ class OthelloGame:
     def changesmooth(self, board, board_1, setRow, setCol, changeRow, changeCol):
         for i in range(8):
             w, h = np.cos(i*np.pi/4), np.sin(i*np.pi/4)
-            w = w/abs(w) if abs(w)>1e-10 else 0
-            h = h/abs(h) if abs(h)>1e-10 else 0
+            w = int(w/abs(w)) if abs(w)>1e-10 else 0
+            h = int(h/abs(h)) if abs(h)>1e-10 else 0
             sleepflag = False
             for j in range(1,8):
                 r = int(setRow + j*w)
@@ -82,7 +82,7 @@ class OthelloGame:
                     sleepflag=True
             if sleepflag:
                 time.sleep(self.changesmooth_sleep_time)
-
+    
     def updateBoard(self, board):
         if len(board[board!=0])==4:
             self.last_board = self.first_board.copy()
@@ -93,12 +93,15 @@ class OthelloGame:
             #ひっくり返った場所は前のままにしたboardを作る
             board_1 =  np.where((self.last_board!=board)&(self.last_board!=0), self.last_board, board)
             self.drawCercle(board_1)
+            
 
             #置いた場所
             setRow, setCol = np.where((board!=0)&(self.last_board==0))
             if len(setRow)==0:
                 return None
+            
             setRow, setCol = setRow[0], setCol[0]
+
             #ひっくり返った場所
             changeRow, changeCol = np.where((self.last_board!=board)&(self.last_board!=0))
             changeRow, changeCol = list(changeRow), list(changeCol)

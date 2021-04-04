@@ -101,3 +101,12 @@ class agent:
         row = action//8
         col = action%8
         return row, col
+
+    def take_determ_action(self, board, changeable_Pos, Position_Row, Position_Col, Change_Position):
+        state = getState(board, changeable_Pos, Position_Row, Position_Col, Change_Position)
+        state = torch.FloatTensor([state])
+        out = self.policy_model(state)['policy'].detach().numpy()[0]
+        action = out.argmax()
+        row = action//8
+        col = action%8
+        return row, col

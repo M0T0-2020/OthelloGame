@@ -91,14 +91,14 @@ def get_play_data(agent_1, agent_2):
 
     
     if reward_1>reward_2:
-        first_rewards.appendleft(reward_1*(100/16))
-        second_rewards.appendleft(-reward_1*(100/16))
+        first_rewards = [reward_1/32]+[0 for _ in first_rewards]
+        second_rewards = [-reward_1/32]+[0 for _ in second_rewards]
     elif reward_1<reward_2:
-        first_rewards.appendleft(-reward_2*(100/16))
-        second_rewards.appendleft(reward_2*(100/16))
+        first_rewards = [-reward_2/32]+[0 for _ in first_rewards]
+        second_rewards = [reward_2/32]+[0 for _ in second_rewards]
     else:
-        first_rewards.appendleft(0)
-        second_rewards.appendleft(0)
+        first_rewards = [0]+[0 for _ in first_rewards]
+        second_rewards = [0]+[0 for _ in second_rewards]
 
     first_states = torch.FloatTensor(first_states)
     second_states = torch.FloatTensor(second_states)
