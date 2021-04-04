@@ -45,7 +45,7 @@ def getState(board, changeable_Pos, Position_Row, Position_Col, Change_Position)
 def getReward(board):
     reward_1 = len(board[board==1])
     reward_2 = len(board[board==2])
-    return reward_1/50,  reward_2/50
+    return reward_1/100,  reward_2/100
 
 def get_play_data(agent_1, agent_2):
     othello = Othello()
@@ -89,11 +89,11 @@ def get_play_data(agent_1, agent_2):
     first_states.appendleft(state)
     second_states.appendleft(state)
     if reward_1>reward_2:
-        first_rewards.appendleft(5)
-        second_rewards.appendleft(-5)
+        first_rewards.appendleft(reward_1*(100/32))
+        second_rewards.appendleft(-reward_1*(100/32))
     elif reward_1<reward_2:
-        first_rewards.appendleft(-5)
-        second_rewards.appendleft(5)
+        first_rewards.appendleft(-reward_2*(100/32))
+        second_rewards.appendleft(reward_2*(100/32))
     else:
         first_rewards.appendleft(0)
         second_rewards.appendleft(0)
@@ -121,7 +121,6 @@ def get_play_data(agent_1, agent_2):
     data_first = {
         'states':first_states,
         'rewards':first_rewards,
-        #'rewards':first_values,
         'actions':first_actions,
         'values':first_values,
     }
@@ -129,7 +128,6 @@ def get_play_data(agent_1, agent_2):
     data_secound = {
         'states':second_states,
         'rewards':second_rewards,
-        #'rewards':second_values,
         'actions':second_actions,
         'values':second_values,
     }
