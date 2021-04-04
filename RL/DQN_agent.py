@@ -13,12 +13,12 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from RL.utils import to_gpu_if_available
 from RL.loss import *
 from RL.optimize_model import optimize_dqncmodel as optimize_model
 from RL.model import DQN_Model as Model
 from RL.train_model import getState
 from RL.noise import AdaptiveParamNoiseSpec, dqn_distance_metric
+from RL.sam import SAM
 
 class agent:
     def __init__(self, input_dim, lam, gamma, lr, eps_start=0.7, eps_end=0.1, eps_decay=1000, noise=None):
@@ -26,7 +26,10 @@ class agent:
         self.gamma = gamma
         self.policy_model = Model(input_dim)
         self.target_model = Model(input_dim)
-        self.optimizer = optim.Adam(params=self.policy_model.parameters(), lr=lr)
+        #self.optimizer = optim.Adam(params=self.policy_model.parameters(), lr=lr)
+        
+        base_optimizer = torch.optim.SGD  # define an optimizer for the "sharpness-aware" update
+        self.optimizer = SAM(self.policy_model.parameters(), base_optimizer, lr=lr, momentum=0.9)
 
         self.eps_start = eps_start
         self.eps_end = eps_end
@@ -57,7 +60,7 @@ class agent:
         self.loss_1_list.append(loss_1)
         self.steps+=1
 
-    def take_actions_withNoise(self, state):
+    def take_actions_withNoise(self, state, changeable_p):
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) *  np.exp(-1. * self.steps / self.eps_decay)
         perturbed_model = copy.deepcopy(self.policy_model)
         params = perturbed_model.state_dict()
@@ -70,34 +73,42 @@ class agent:
             
         out = perturbed_model(state)['policy'].detach().numpy()[0]
         if random.random()<eps_threshold:
-            action = self.take_random_actions(out)
+            action = self.take_random_actions(changeable_p)
+            return action
         else:
-            action = out.argmax()
-        return action
+            actions = out.argsort()[::-1]
+            for action in actions:
+                if action in changeable_p:
+                    return action
+            return 0
     
-    def take_actions_withoutNoise(self, state):
+    def take_actions_withoutNoise(self, state, changeable_p):
         eps_threshold = self.eps_end + (self.eps_start - self.eps_end) *  np.exp(-1. * self.steps / self.eps_decay)
         out = self.policy_model(state)['policy'].detach().numpy()[0]
         if random.random()<eps_threshold:
-            action = self.take_random_actions(out)
+            action = self.take_random_actions(changeable_p)
+            return action
         else:
-            action = out.argmax()
-        return action
-
-    def take_random_actions(self, out):
-        actions = list(np.where(out>-1e7)[0])
-        if len(actions)==0:
+            actions = out.argsort()[::-1]
+            for action in actions:
+                if action in changeable_p:
+                    return action
             return 0
-        action = random.choice(actions)
+
+    def take_random_actions(self, changeable_p):
+        if len(changeable_p)==0:
+            return 0
+        action = random.choice(changeable_p)
         return action
     
     def take_action(self, board, changeable_Pos, Position_Row, Position_Col, Change_Position):
         state = getState(board, changeable_Pos, Position_Row, Position_Col, Change_Position)
         state = torch.FloatTensor([state])
+        changeable_p = list(np.where(changeable_Pos.flatten()>0)[0])
         if self.noise is not None:
-            action = self.take_actions_withNoise(state)
+            action = self.take_actions_withNoise(state, changeable_p)
         else:
-            action = self.take_actions_withoutNoise(state)
+            action = self.take_actions_withoutNoise(state, changeable_p)
         row = action//8
         col = action%8
         return row, col

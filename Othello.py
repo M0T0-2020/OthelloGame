@@ -51,14 +51,18 @@ class Othello:
     def change_board(self, setrow, setcol):
         # if player cannot set othello => pass
         if len(self.Position_Row)>0:
-            changeIndex=0
+            changeIndex=None
             for i, (_row, _col) in enumerate(zip(self.Position_Row, self.Position_Col)):
                 if setrow==_row and setcol==_col:
                     changeIndex = self.Change_Position[i]
                     break
-            self.board = ChangeBoard(self.board, setrow, setcol, changeIndex, self.color)
-            self.playlog.append(self.board.copy())
-            self.cannot_play_flag = 0
+            if changeIndex is not None:
+                self.board = ChangeBoard(self.board, setrow, setcol, changeIndex, self.color)
+                self.playlog.append(self.board.copy())
+                self.cannot_play_flag = 0
+            else:
+                print('cat not put here')
+                raise
 
             if len(self.board[self.board==0])==0:
                 return True

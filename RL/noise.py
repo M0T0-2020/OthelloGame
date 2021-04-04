@@ -5,7 +5,7 @@ import torch
 from math import sqrt
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from RL.utils import to_gpu_if_available
+from RL.utils import get_device
 
 """
 episode_transitions = memory.memory[memory.position-t:memory.position]
@@ -66,18 +66,19 @@ def dqn_distance_metric(transactions, policy_model, perturb_model):
     Compute "distance" between actions taken by two policies at the same states
     Expects numpy arrays
     """
-    policy_model = to_gpu_if_available(policy_model)
+    device = get_device()
+    policy_model = policy_model.to(device)
     states = []
     for transaction in transactions:
         states.append(copy.deepcopy(transaction['states']))
     states = torch.cat(states)
-    states = to_gpu_if_available(states)
+    states = states.to(device)
     policy = policy_model(states)['policy'].squeeze()
     perturb_policy = perturb_model(states)['policy'].squeeze()
 
     diff = policy.detach().cpu().numpy()-perturb_policy.detach().cpu().numpy()
     mean_diff = np.mean(diff**2, axis=0)
-    distance = sqrt(np.mean(mean_diff))
+    distance = np.sqrt(np.mean(mean_diff))
     policy_model = policy_model.to('cpu')
     perturb_model = perturb_model.to('cpu')
     return distance
@@ -93,7 +94,7 @@ def ddpg_distance_metric(batch, policy_actor, perturb_actor, device):
 
     diff = action_1.detach().numpy()-action_2.detach().numpy()
     mean_diff = np.mean(diff**2, axis=0)
-    distance = sqrt(np.mean(mean_diff))
+    distance = np.sqrt(np.mean(mean_diff))
     policy_actor = policy_actor.to('cpu')
     return distance
 """

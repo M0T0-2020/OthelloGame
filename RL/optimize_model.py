@@ -13,11 +13,12 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from RL.utils import to_gpu_if_available
+from RL.utils import get_device
 from RL.loss import *
 
 def optimize_a2cmodel(model, transactions, optimizer, gamma=.9, lam=.6):
-    model = to_gpu_if_available(model)
+    device = get_device()
+    model = model.to(device)
 
     policy_loss = []
     value_loss = []
@@ -58,31 +59,49 @@ def optimize_a2cmodel(model, transactions, optimizer, gamma=.9, lam=.6):
     return policy_loss.item(), value_loss.item(), entropy.item(), othello_loss.item()
 
 def optimize_dqncmodel(policy_model, target_model, transactions, optimizer, gamma=.9, lam=.6):
-    policy_model = to_gpu_if_available(policy_model)
-    target_model = to_gpu_if_available(target_model)
+    device = get_device()
+    policy_model = policy_model.to(device)
+    target_model = target_model.to(device)
 
-    total_loss = []
+    target_value = []
+    states_for_policy = []
+    actions_for_policy = []
 
     for transaction in transactions:
         states = copy.deepcopy(transaction['states'])
         rewards = copy.deepcopy(transaction["rewards"])
         actions = copy.deepcopy(transaction["actions"])
         
-        policy_q = policy_model(states[1:])['policy']
-        policy_q = policy_q.gather(1, actions.to(torch.int64).unsqueeze(1))
-
         target_q = target_model(states[:-1])['policy'].detach()
         td_target_value = calu_td_target_value_dqn(target_q, rewards, gamma, lam)
-        loss = ((td_target_value - policy_q)**2)
-        total_loss+=loss
+        
+        states_for_policy.append(states[1:])
+        actions_for_policy.append(actions.unsqueeze(1))
+        target_value.append(td_target_value)
     
-    total_loss = torch.cat(total_loss, dim=0).mean()
-    optimizer.zero_grad()
-    total_loss.backward()
-    optimizer.step()
+    target_values = torch.cat(target_value, dim=0).to(device)
+    states_for_policy = torch.cat(states_for_policy, dim=0).to(device)
+    actions_for_policy = torch.cat(actions_for_policy, dim=0).to(device)
+    
+    #print(f"target_values.size()  {target_values.size()}")
+    #print(f"states_for_policy.size()  {states_for_policy.size()}")
+    #print(f"actions_for_policy.size()  {actions_for_policy.size()}")
+
+    policy_q = policy_model(states_for_policy)['policy']
+    policy_q = policy_q.gather(1, actions_for_policy.to(torch.int64))
+    
+    loss = nn.MSELoss()(policy_q, target_values)
+    loss.mean().backward()
+    optimizer.first_step(zero_grad=True)
+    
+    policy_q = policy_model(states_for_policy)['policy']
+    policy_q = policy_q.gather(1, actions_for_policy.to(torch.int64))
+
+    nn.MSELoss()(policy_q, target_values).backward()
+    optimizer.second_step(zero_grad=True)
 
     policy_model.eval()
     policy_model = policy_model.to('cpu')
     target_model = target_model.to('cpu')
 
-    return total_loss.item()
+    return loss.item()

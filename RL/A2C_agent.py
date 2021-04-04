@@ -13,7 +13,6 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from RL.utils import to_gpu_if_available
 from RL.loss import *
 from RL.optimize_model import optimize_a2cmodel as optimize_model
 from RL.model import A2C_Model as Model
