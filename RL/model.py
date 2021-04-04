@@ -197,5 +197,5 @@ class DQN_Model(nn.Module):
         x = torch.flatten(x, 1)
         
         q = self.fc_p(x)
-        q[x_2==0]=-1e-9
+        q[x_2==0]=-1e10
         return {'policy':q, 'attention':attention}
