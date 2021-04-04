@@ -92,8 +92,6 @@ class agent:
         return action
     
     def take_action(self, board, changeable_Pos, Position_Row, Position_Col, Change_Position):
-        eps_threshold = self.eps_end + (self.eps_start - self.eps_end) *  np.exp(-1. * self.steps / self.eps_decay)
-        
         state = getState(board, changeable_Pos, Position_Row, Position_Col, Change_Position)
         state = torch.FloatTensor([state])
         if self.noise is not None:

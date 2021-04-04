@@ -89,11 +89,11 @@ def get_play_data(agent_1, agent_2):
     first_states.appendleft(state)
     second_states.appendleft(state)
     if reward_1>reward_2:
-        first_rewards.appendleft(reward_1*(100/32))
-        second_rewards.appendleft(-reward_1*(100/32))
+        first_rewards.appendleft(reward_1*(100/16))
+        second_rewards.appendleft(-reward_1*(100/16))
     elif reward_1<reward_2:
-        first_rewards.appendleft(-reward_2*(100/32))
-        second_rewards.appendleft(reward_2*(100/32))
+        first_rewards.appendleft(-reward_2*(100/16))
+        second_rewards.appendleft(reward_2*(100/16))
     else:
         first_rewards.appendleft(0)
         second_rewards.appendleft(0)
