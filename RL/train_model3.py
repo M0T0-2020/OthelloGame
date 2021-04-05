@@ -90,7 +90,7 @@ def get_play_data(agent_1, agent_2):
     second_states.appendleft(state)
 
     
-    discount_rate=0.3
+    discount_rate=0.85
     if reward_1>reward_2:
         a = 1#reward_1/(reward_1+reward_2)
         first_rewards = [a*(discount_rate**i) for i in range(1+len(first_rewards))]

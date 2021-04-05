@@ -16,9 +16,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from RL.loss import *
 from RL.optimize_model import optimize_dqncmodel as optimize_model
 from RL.model import DQN_Model as Model
-from RL.train_model import getState
+from RL.train_model3 import randomAgent, greedyAgent, get_play_data
 from RL.noise import AdaptiveParamNoiseSpec, dqn_distance_metric
 from RL.sam import SAM
+from RL.utils import get_device
 
 class agent:
     def __init__(self, input_dim, lam, gamma, lr, target_update=7, eps_start=0.7, eps_end=0.1, eps_decay=1000, noise=None):
@@ -42,6 +43,34 @@ class agent:
         self.target_update = target_update
         
         self.loss_1_list = []
+
+    def init_param_optim(self, n=100):
+        device = get_device()
+        self.policy_model = self.policy_model.to(device)
+        agent_1 = randomAgent()
+        agent_2 = greedyAgent()
+        tmp_optimizer = optim.Adam(params=self.policy_model.parameters(), lr=1e-3)
+        tmp_loss_list = []
+        for _ in range(n):
+            states = []
+            for _ in range(4):
+                data_1, data_2 = get_play_data(agent_1, agent_2)
+                states.append(data_1['states'])
+                states.append(data_2['states'])
+            states = torch.cat(states, dim=0).to(device)
+            policy = self.policy_model(states)['policy']
+            y = states[:,2,:,:].flatten(1)
+            y[y>0]=1
+            y *= 30
+            loss = ((policy-y)**2).mean()
+            tmp_optimizer.zero_grad()
+            loss.backward()
+            tmp_optimizer.step()
+            tmp_loss_list.append(loss.item())
+        self.policy_model = self.policy_model.to('cpu')
+        self.target_model.load_state_dict(self.policy_model.state_dict())
+        self.perturbed_model = copy.deepcopy(self.policy_model)
+        return tmp_loss_list
 
     def optimize_model(self,replay_memory):
         sample_size = min(len(replay_memory), 2**3)
