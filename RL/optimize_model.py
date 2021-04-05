@@ -95,14 +95,12 @@ def optimize_dqncmodel(policy_model, target_model, transactions, optimizer, gamm
     if not sam:
         optimizer.zero_grad()
         loss.mean().backward()
-        for param in policy_model.parameters():
-            param.grad.data.clamp_(-1, 1)
+        torch.nn.utils.clip_grad_norm_(policy_model.parameters(), 1)
         optimizer.step()
         
     else:
         loss.mean().backward()
-        for param in policy_model.parameters():
-            param.grad.data.clamp_(-1, 1)
+        torch.nn.utils.clip_grad_norm_(policy_model.parameters(), 1)
         optimizer.first_step(zero_grad=True)
         policy_q = policy_model(states_for_policy)['policy']
         policy_q = policy_q.gather(1, actions_for_policy.to(torch.int64))
