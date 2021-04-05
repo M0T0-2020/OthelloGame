@@ -61,26 +61,27 @@ class AdaptiveParamNoiseSpec(object):
         fmt = 'AdaptiveParamNoiseSpec(initial_stddev={}, desired_action_stddev={}, adaptation_coefficient={})'
         return fmt.format(self.initial_stddev, self.desired_action_stddev, self.adaptation_coefficient)
 
-def dqn_distance_metric(transactions, policy_model, perturb_model):
+def dqn_distance_metric(transactions, policy_model, perturbed_model):
     """
     Compute "distance" between actions taken by two policies at the same states
     Expects numpy arrays
     """
     device = get_device()
     policy_model = policy_model.to(device)
+    perturbed_model = perturbed_model.to(device)
     states = []
     for transaction in transactions:
         states.append(copy.deepcopy(transaction['states']))
     states = torch.cat(states)
     states = states.to(device)
     policy = policy_model(states)['policy'].squeeze()
-    perturb_policy = perturb_model(states)['policy'].squeeze()
+    perturb_policy = perturbed_model(states)['policy'].squeeze()
 
     diff = policy.detach().cpu().numpy()-perturb_policy.detach().cpu().numpy()
     mean_diff = np.mean(diff**2, axis=0)
     distance = np.sqrt(np.mean(mean_diff))
     policy_model = policy_model.to('cpu')
-    perturb_model = perturb_model.to('cpu')
+    perturbed_model = perturbed_model.to('cpu')
     return distance
 
 """

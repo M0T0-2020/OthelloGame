@@ -24,7 +24,7 @@ if __name__ == "__main__":
     agent_1 = randomAgent()
 
     dqn = dqn_agent(input_dim=3, lam=0.8, gamma=0.99, lr=1e-4)
-    param = torch.load('dqn_param2.pt')
+    param = torch.load('dqn_param1.pt')
     dqn.policy_model.load_state_dict(param)
 
     while (1):
@@ -40,14 +40,6 @@ if __name__ == "__main__":
         board, changeable_Pos, Position_Row, Position_Col, Change_Position, done = othello.make()
         game.updateBoard(board)
         for _ in range(100):
-            setrow, setcol = agent_1.take_action(board, changeable_Pos, Position_Row, Position_Col, Change_Position)
-            board, changeable_Pos, Position_Row, Position_Col, Change_Position, done = othello.step(setrow, setcol)
-            
-            game.updateBoard(board)
-            if done:
-                time.sleep(0.5)
-                break
-
             setrow, setcol = dqn.take_determ_action(board, changeable_Pos, Position_Row, Position_Col, Change_Position)
             board, changeable_Pos, Position_Row, Position_Col, Change_Position, done = othello.step(setrow, setcol)
             
@@ -56,4 +48,11 @@ if __name__ == "__main__":
                 time.sleep(0.5)
                 break
 
+            setrow, setcol = agent_1.take_action(board, changeable_Pos, Position_Row, Position_Col, Change_Position)
+            board, changeable_Pos, Position_Row, Position_Col, Change_Position, done = othello.step(setrow, setcol)
+            
+            game.updateBoard(board)
+            if done:
+                time.sleep(0.5)
+                break
     sys.exit(0)

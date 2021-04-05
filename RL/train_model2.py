@@ -91,11 +91,11 @@ def get_play_data(agent_1, agent_2):
 
     
     if reward_1>reward_2:
-        a = 8*(reward_1/(reward_1+reward_2))
+        a = reward_1/(reward_1+reward_2)
         first_rewards = [a]+[0 for _ in first_rewards]
         second_rewards = [-a]+[0 for _ in second_rewards]
     elif reward_1<reward_2:
-        a = 8*(reward_2/(reward_1+reward_2))
+        a = reward_2/(reward_1+reward_2)
         first_rewards = [-a]+[0 for _ in first_rewards]
         second_rewards = [a]+[0 for _ in second_rewards]
     else:

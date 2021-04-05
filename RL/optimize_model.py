@@ -61,8 +61,7 @@ def optimize_a2cmodel(model, transactions, optimizer, gamma=.9, lam=.6):
 def optimize_dqncmodel(policy_model, target_model, transactions, optimizer, gamma=.9, lam=.6):
     device = get_device()
     policy_model = policy_model.to(device)
-    target_model = target_model.to(device)
-
+    
     target_value = []
     states_for_policy = []
     actions_for_policy = []
@@ -77,7 +76,7 @@ def optimize_dqncmodel(policy_model, target_model, transactions, optimizer, gamm
         
         states_for_policy.append(states[1:])
         actions_for_policy.append(actions.unsqueeze(1))
-        target_value.append(td_target_value)
+        target_value.append(td_target_value.detach())
     
     target_values = torch.cat(target_value, dim=0).to(device)
     states_for_policy = torch.cat(states_for_policy, dim=0).to(device)
@@ -91,15 +90,20 @@ def optimize_dqncmodel(policy_model, target_model, transactions, optimizer, gamm
     policy_q = policy_q.gather(1, actions_for_policy.to(torch.int64))
     
     loss = nn.MSELoss()(policy_q, target_values)
-    loss.mean().backward()
-    optimizer.first_step(zero_grad=True)
+
+    sam=True
+    if not sam:
+        optimizer.zero_grad()
+        loss.mean().backward()
+        optimizer.step()
+    else:
+        loss.mean().backward()
+        optimizer.first_step(zero_grad=True)
+        policy_q = policy_model(states_for_policy)['policy']
+        policy_q = policy_q.gather(1, actions_for_policy.to(torch.int64))
+        nn.MSELoss()(policy_q, target_values).backward()
+        optimizer.second_step(zero_grad=True)
     
-    policy_q = policy_model(states_for_policy)['policy']
-    policy_q = policy_q.gather(1, actions_for_policy.to(torch.int64))
-
-    nn.MSELoss()(policy_q, target_values).backward()
-    optimizer.second_step(zero_grad=True)
-
     policy_model.eval()
     policy_model = policy_model.to('cpu')
     target_model = target_model.to('cpu')

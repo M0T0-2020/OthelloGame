@@ -127,7 +127,7 @@ class A2C_Model(nn.Module):
         x = torch.flatten(x, 1)
         
         p = self.fc_p(x)
-        p[x_2==0]=-1e25
+        p[x_2==0]=0
         #p*=p_2.to(torch.int64)
         v = self.fc_v(x)
         return {'policy':p, 'value':v}
@@ -197,5 +197,5 @@ class DQN_Model(nn.Module):
         x = torch.flatten(x, 1)
         
         q = self.fc_p(x)
-        q[x_2==0]=-1e10
+        q[x_2==0]=0
         return {'policy':q, 'attention':attention}

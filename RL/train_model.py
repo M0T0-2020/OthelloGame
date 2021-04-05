@@ -45,7 +45,7 @@ def getState(board, changeable_Pos, Position_Row, Position_Col, Change_Position)
 def getReward(board):
     reward_1 = len(board[board==1])
     reward_2 = len(board[board==2])
-    return reward_1,  reward_2
+    return reward_1/64, reward_2/64
 
 def get_play_data(agent_1, agent_2):
     othello = Othello()
@@ -91,11 +91,11 @@ def get_play_data(agent_1, agent_2):
 
     
     if reward_1>reward_2:
-        first_rewards.appendleft(reward_1*(100/16))
-        second_rewards.appendleft(-reward_1*(100/16))
+        first_rewards.appendleft(reward_1*16)
+        second_rewards.appendleft(-reward_1*16)
     elif reward_1<reward_2:
-        first_rewards.appendleft(-reward_2*(100/16))
-        second_rewards.appendleft(reward_2*(100/16))
+        first_rewards.appendleft(-reward_2*16)
+        second_rewards.appendleft(reward_2*16)
     else:
         first_rewards.appendleft(0)
         second_rewards.appendleft(0)
