@@ -100,7 +100,7 @@ def get_play_data(agent_1, agent_2):
     first_rewards = torch.FloatTensor(list(first_rewards)[:-1])
     second_rewards = torch.FloatTensor(list(second_rewards)[:-1])
 
-    discount_rate=0.5
+    discount_rate=1
     if reward_1>reward_2:
         first_values = torch.FloatTensor([discount_rate**i for i in range(len(first_rewards))])
         second_values = torch.FloatTensor([-discount_rate**i for i in range(len(second_rewards))])

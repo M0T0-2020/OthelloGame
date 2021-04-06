@@ -89,7 +89,7 @@ def optimize_a2cmodel(model, transactions, optimizer, gamma=.9, lam=.6, step=500
         
         loss.backward()
         if i==0:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
             optimizer.first_step(zero_grad=True)
         if i==1:
             # second forward-backward pass

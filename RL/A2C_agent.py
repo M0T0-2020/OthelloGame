@@ -27,8 +27,8 @@ class agent:
         self.gamma = gamma
         self.model = Model(input_dim)
         self.perturbed_model = copy.deepcopy(self.model)
-        base_optimizer = optim.SGD
-        self.optimizer = SAM(self.model.parameters(), base_optimizer, lr=lr, weight_decay=weight_decay, momentum=0.9)
+        base_optimizer = optim.Adam
+        self.optimizer = SAM(self.model.parameters(), base_optimizer, lr=lr, weight_decay=weight_decay)
         self.noise = noise
 
         self.steps = 0
