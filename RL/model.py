@@ -85,20 +85,30 @@ class A2C_Model(nn.Module):
             nn.Conv2d(input_dim*8, input_dim*16, 3),)
         
         self.fc_p = nn.Sequential(
-            nn.Linear(768,768),
+            nn.Linear(768,256),
             nn.Dropout(),
             nn.ReLU(),
-            nn.Linear(768,64),
+            nn.Linear(256,64),
             nn.Dropout(),
             nn.ReLU(),
             nn.Linear(64,64)
         )
         
         self.fc_v = nn.Sequential(
-            nn.Linear(768,768),
+            nn.Linear(768,256),
             nn.Dropout(),
             nn.ReLU(),
-            nn.Linear(768,64),
+            nn.Linear(256,64),
+            nn.Dropout(),
+            nn.ReLU(),
+            nn.Linear(64,1)
+        )
+
+        self.fc_r = nn.Sequential(
+            nn.Linear(768,256),
+            nn.Dropout(),
+            nn.ReLU(),
+            nn.Linear(256,64),
             nn.Dropout(),
             nn.ReLU(),
             nn.Linear(64,1)
@@ -130,7 +140,8 @@ class A2C_Model(nn.Module):
         p[x_2==0]=0
         #p*=p_2.to(torch.int64)
         v = self.fc_v(x)
-        return {'policy':p, 'value':v}
+        r = self.fc_r(x)
+        return {'policy':p, 'value':v, 'return':r}
 
 
 class DQN_Model(nn.Module):

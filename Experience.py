@@ -24,7 +24,7 @@ if __name__ == "__main__":
     agent_1 = randomAgent()
 
     dqn = dqn_agent(input_dim=3, lam=0.8, gamma=0.99, lr=1e-4)
-    param = torch.load('dqn_param1.pt')
+    param = torch.load('dqn_param2.pt')
     dqn.policy_model.load_state_dict(param)
 
     while (1):

@@ -11,52 +11,93 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical
+import torch.nn.functional as F
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from RL.utils import get_device
 from RL.loss import *
 
-def optimize_a2cmodel(model, transactions, optimizer, gamma=.9, lam=.6):
+
+def calu_entropy(out_policy, states):
+    entropy = 0
+    states_2 = states[:,2,:,:].flatten(1)
+    for tmp_policy, stmp_2 in zip(out_policy, states_2):
+        tmp_p = tmp_policy[stmp_2!=0]
+        if len(tmp_p)==0:
+            continue
+        entropy+=Categorical(logits=tmp_p).entropy()
+    return entropy
+
+def optimize_a2cmodel(model, transactions, optimizer, gamma=.9, lam=.6, step=5000):
     device = get_device()
+    model = model.train()
     model = model.to(device)
 
-    policy_loss = []
-    value_loss = []
-    entropy = []
-    othello_loss = 0
+    states = []
+    actions = []
+    td_target_values = []
+    td_target_returns = []
 
     for transaction in transactions:
-        states = copy.deepcopy(transaction['states'])
-        rewards = copy.deepcopy(transaction["rewards"])
-        actions = copy.deepcopy(transaction["actions"])
-        
-        out = model(states)
-        policy = out['policy'][1:]
-        policy = Categorical(logits=policy)
-        value = out['value'][1:]
-        target_value = out['value'][:-1].detach()
-        
-        td_target_value = calu_td_target_value_a2c(target_value, rewards, gamma, lam)
-        ploss, vloss, ent, oth = calu_loss(policy, actions, value, td_target_value, states)
+        tmp_states = copy.deepcopy(transaction['states'])
+        tmp_actions = copy.deepcopy(transaction["actions"])
+        tmp_values = copy.deepcopy(transaction["values"])
+        tmp_rewards = copy.deepcopy(transaction["rewards"])
 
-        policy_loss+=ploss
-        value_loss+=vloss
-        entropy+=ent
-        othello_loss+=oth/len(transactions)
+        tmp_out = model(tmp_states[:-1].to(device))
+        target_value = tmp_out['value'].detach().to('cpu')
+        target_return = tmp_out['return'].detach().to('cpu')
+
+        tmp_td_target_value = calu_td_target_value_a2c(target_value, tmp_values, gamma, lam)
+        tmp_td_target_return = calu_td_target_value_a2c(target_return, tmp_rewards, gamma, lam)
+
+        states.append(tmp_states[1:])
+        actions.append(tmp_actions)
+        td_target_values.append(tmp_td_target_value.detach())
+        td_target_returns.append(tmp_td_target_return.detach())
     
-    policy_loss = torch.cat(policy_loss, dim=0).mean()
-    value_loss = torch.cat(value_loss, dim=0).mean()
-    entropy = torch.cat(entropy, dim=0).mean()
+    states = torch.cat(states, dim=0).to(device)
+    actions = torch.cat(actions, dim=0).to(device).to(torch.int64).unsqueeze(1)
+    td_target_values = torch.cat(td_target_values, dim=0).to(device)
+    td_target_returns = torch.cat(td_target_returns, dim=0).to(device)
 
-    total_loss = policy_loss+2*value_loss+0.2*entropy#+0.01*othello_loss
-    optimizer.zero_grad()
-    total_loss.backward()
-    optimizer.step()
+    for i in range(2):
+        losses = {}
+        out = model(states)
+        out_policy = Categorical(logits=out['policy'])
+        out_values = out['value']
+        out_returns = out['return']
 
-    model.eval()
+        values_advantage = td_target_values - out_values
+        returns_advantage = td_target_returns - out_returns
+        
+        log_probs = out_policy.logits.gather(1, actions)
+        advantages = 3*values_advantage + returns_advantage
+
+        losses["actor_loss"] = -(log_probs * advantages.detach()).squeeze(1)
+        losses["critic_value_loss"] = F.mse_loss(out_values, td_target_values, reduction='none').squeeze(1)
+        losses["critic_return_loss"] = F.smooth_l1_loss(out_returns, td_target_returns, reduction='none').squeeze(1)
+        losses['entropy'] = -calu_entropy(out['policy'], states)
+        
+        loss = 0
+        coef = {'actor_loss':1, 'critic_value_loss':1, 'critic_return_loss':1, 'entropy':0.8}
+        for key, loss_value in losses.items():
+            c = coef[key]
+            if key=='entropy':
+                c = c**step 
+            loss += c*(loss_value).mean()
+        
+        loss.backward()
+        if i==0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+            optimizer.first_step(zero_grad=True)
+        if i==1:
+            # second forward-backward pass
+            optimizer.second_step(zero_grad=True)
+    model = model.eval()
     model = model.to('cpu')
 
-    return policy_loss.item(), value_loss.item(), entropy.item(), othello_loss.item()
+    return losses["actor_loss"].mean().item(), losses["critic_value_loss"].mean().item(), losses["critic_return_loss"].mean().item()
 
 def optimize_dqncmodel(policy_model, target_model, transactions, optimizer, gamma=.9, lam=.6):
     device = get_device()
