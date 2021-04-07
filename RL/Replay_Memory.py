@@ -10,7 +10,6 @@ class Replay_Memory:
         self.memory_size = memory_size
         self.memory = deque(maxlen=self.memory_size)
         self.position = 0
-        self.transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'))
 
     def push(self, data):
         self.memory.appendleft(data)

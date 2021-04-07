@@ -69,8 +69,8 @@ class A2C_Model(nn.Module):
         
         self.input_dim = input_dim
         
-        self.transformer_encoder_1 = nn.TransformerEncoder(
-                    nn.TransformerEncoderLayer(d_model=input_dim, nhead=input_dim),
+        self.transformer_encoder_1 = Encoder(
+                    AttentionEncoderLayer(d_model=input_dim, nhead=input_dim),
                     num_layers=3
                 )
 
@@ -113,7 +113,6 @@ class A2C_Model(nn.Module):
             nn.ReLU(),
             nn.Linear(64,1)
         )
-    
     def attention_forward(self, x, layer):
         
         N =  x.size(0)
@@ -121,15 +120,15 @@ class A2C_Model(nn.Module):
         h_dim = x.size(2)
         w_dim = x.size(3)
         att_inp = torch.flatten(x,2).permute(2,0,1)#（バッチサイズ, 次元数, W, H）=>（バッチサイズ, 次元数,系列長）=>（系列長, バッチサイズ, 次元数）
-        att_inp = layer(att_inp)
+        att_inp, attention = layer(att_inp)
         att_inp = att_inp.permute(1,2,0)
         
         att_inp = att_inp.reshape(N, inp_dim, h_dim, w_dim)
-        return att_inp
-    
+        return att_inp, attention
+
     def forward(self, x):
         x_2 = copy.deepcopy(x[:,2,:,:].flatten(1))
-        x = self.attention_forward(x, self.transformer_encoder_1)
+        x, attention = self.attention_forward(x, self.transformer_encoder_1)
         
         
         x = self.conv_1(x)
@@ -141,7 +140,7 @@ class A2C_Model(nn.Module):
         #p*=p_2.to(torch.int64)
         v = self.fc_v(x)
         r = self.fc_r(x)
-        return {'policy':p, 'value':v, 'return':r}
+        return {'policy':p, 'value':v, 'return':r, 'attention': attention}
 
 
 class DQN_Model(nn.Module):
