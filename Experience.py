@@ -26,11 +26,11 @@ if __name__ == "__main__":
     greedy_agent = greedyAgent()
 
     agent_1 = A2C_agent(input_dim=3, lam=0.8, gamma=0.99, lr=1e-4)
-    param = torch.load('a2c_1_param1.pt')
+    param = torch.load('a2c_1_param2.pt')
     agent_1.model.load_state_dict(param)
 
     agent_2 = A2C_agent(input_dim=3, lam=0.8, gamma=0.99, lr=1e-4)
-    param = torch.load('a2c_2_param1.pt')
+    param = torch.load('a2c_2_param2.pt')
     agent_2.model.load_state_dict(param)
 
     while (1):
