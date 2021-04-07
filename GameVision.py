@@ -30,9 +30,9 @@ class OthelloGame:
         self.first_board[3,4]=2
         self.first_board[4,3]=2
 
-        self.changesmooth_sleep_time = 0.5
-        self.showResult_sleep_time = 0.5
-        self.drawCercle_sleep_time = 0.5
+        self.changesmooth_sleep_time = 0.6
+        self.showResult_sleep_time = 0.1
+        self.drawCercle_sleep_time = 0.2
 
 
 
@@ -78,12 +78,14 @@ class OthelloGame:
                     break
                 if board[r,c]!=board_1[r,c]:
                     board_1[r,c] = board[r,c]
+                    self.drawBoardLine()
                     self.drawCercle(board_1)
                     sleepflag=True
             if sleepflag:
                 time.sleep(self.changesmooth_sleep_time)
     
     def updateBoard(self, board):
+        print(board)
         if len(board[board!=0])==4:
             self.last_board = self.first_board.copy()
             self.drawCercle(board)
@@ -92,6 +94,7 @@ class OthelloGame:
             # game end
             #ひっくり返った場所は前のままにしたboardを作る
             board_1 =  np.where((self.last_board!=board)&(self.last_board!=0), self.last_board, board)
+            self.drawBoardLine()
             self.drawCercle(board_1)
             
 
