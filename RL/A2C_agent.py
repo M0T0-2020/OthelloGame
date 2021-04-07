@@ -17,7 +17,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from RL.loss import *
 from RL.optimize_model import optimize_a2cmodel as optimize_model
 from RL.model import A2C_Model as Model
-from RL.train_model import randomAgent, greedyAgent, get_play_data, getState
+from RL.train_model import  get_play_data, getState
+from RL.rule_agent import randomAgent, greedyAgent
 from RL.sam import SAM
 from RL.utils import get_device
 
